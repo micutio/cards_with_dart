@@ -1,15 +1,36 @@
 import 'dart:io';
 
 import 'package:cards_with_dart/card.dart';
+import 'package:cards_with_dart/deck.dart';
 import 'package:cards_with_dart/effect.dart';
+import 'package:cards_with_dart/hand.dart';
+import 'package:cards_with_dart/library.dart';
 
 void main(List<String> arguments) {
-  final hand = [
+  const int deckSize = 10;
+  const int handSize = 4;
+
+  // Create a library with a set of unique cards
+  final library = Library();
+  library.cards.addAll({
     Card("Overpowered!", Effect.winGame),
     Card("Sleep", Effect.none),
     Card("Skip", Effect.none),
     Card("Eternal Fail", Effect.loseGame),
-  ];
+  });
+
+  // Create a deck with max size 10 and add each card twice.
+  final deck = Deck(deckSize);
+  // `...` is the spread operator, which unpacks the little 2-card list into the bigger list.
+  deck.addCards([
+    for (var card in library.cards) ...[card, card],
+  ]);
+  deck.shuffle();
+
+  // Then create a hand and give it a card.
+  final hand = Hand(handSize);
+  final card1 = deck.drawCard();
+  if (card1 != null) hand.addCard(card1);
 
   var isGameLost = false;
   var isGameWon = false;
@@ -18,11 +39,17 @@ void main(List<String> arguments) {
 
   // Run the loop until the player has either won or lost.
   while (!(isGameLost || isGameWon)) {
+    // Add a card from the deck, if possible
+    if (!hand.isFull) {
+      final drawnCard = deck.drawCard();
+      if (drawnCard != null) hand.addCard(drawnCard);
+    }
+
     // Show the player's hand.
     print('Your hand:');
-    for (var i = 0; i < hand.length; i++) {
+    for (var i = 0; i < hand.size; i++) {
       final idx = i + 1;
-      final card = hand[i];
+      final card = hand.cards[i];
       print('  $idx: $card');
     }
 
@@ -40,7 +67,7 @@ void main(List<String> arguments) {
     var cardNumber = int.tryParse(choice);
     if (cardNumber == null) {
       print('This is not a valid number!');
-      exit(1);
+      continue;
     }
 
     // Convert card number from 1-indexed to 0-indexed.
@@ -51,12 +78,12 @@ void main(List<String> arguments) {
       continue;
     }
 
-    if (cardNumber >= hand.length) {
+    if (cardNumber >= hand.size) {
       print('The chosen card number is too high!');
       continue;
     }
 
-    final card = hand.removeAt(cardNumber);
+    final card = hand.playCardAt(cardNumber);
     print('You play $card');
     switch (card.effect) {
       case Effect.none:
