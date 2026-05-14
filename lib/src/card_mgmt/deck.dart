@@ -1,13 +1,16 @@
-import '../card.dart';
+import 'dart:collection';
+
+import 'card.dart';
 
 /// Holds all the player's cards during a game which are not in their hand.
 /// Cards are drawn from the back of the deck to avoid to much re-allocation
 /// of the backing list.
 class Deck {
+  final String title;
   final int maxSize;
   final List<Card> _cards = [];
 
-  Deck(this.maxSize);
+  Deck(this.title, this.maxSize);
 
   /// Draws a card and removes it from the deck.
   Card? drawCard() {
@@ -31,4 +34,8 @@ class Deck {
   void shuffle() {
     _cards.shuffle();
   }
+
+  /// Returns all cards of the hand without removing them.
+  /// Intended for debugging.
+  UnmodifiableListView<Card> get cards => UnmodifiableListView(_cards);
 }

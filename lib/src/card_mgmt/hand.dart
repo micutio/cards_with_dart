@@ -1,6 +1,6 @@
 import 'dart:collection';
 
-import '../card.dart';
+import 'card.dart';
 
 /// The cards a player is holding in their hand.
 class Hand {

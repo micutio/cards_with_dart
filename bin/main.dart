@@ -1,14 +1,13 @@
 import 'dart:io';
 
-import 'package:cards_with_dart/card.dart';
-import 'package:cards_with_dart/deck.dart';
-import 'package:cards_with_dart/effect.dart';
-import 'package:cards_with_dart/hand.dart';
-import 'package:cards_with_dart/library.dart';
+import 'package:cards_with_dart/card_mgmt.dart';
+import 'package:cards_with_dart/src/renderer/stdout_renderer.dart';
 
 void main(List<String> arguments) {
   const int deckSize = 10;
   const int handSize = 4;
+
+  final renderer = StdoutRenderer();
 
   // Create a library with a set of unique cards
   final library = Library();
@@ -20,7 +19,7 @@ void main(List<String> arguments) {
   });
 
   // Create a deck with max size 10 and add each card twice.
-  final deck = Deck(deckSize);
+  final deck = Deck('Default deck', deckSize);
   // `...` is the spread operator, which unpacks the little 2-card list into the bigger list.
   deck.addCards([
     for (var card in library.cards) ...[card, card],
@@ -32,13 +31,12 @@ void main(List<String> arguments) {
   final card1 = deck.drawCard();
   if (card1 != null) hand.addCard(card1);
 
-  var isGameLost = false;
   var isGameWon = false;
 
-  print('Cards with Dart');
+  renderer.renderMessage('Cards with Dart');
 
   // Run the loop until the player has either won or lost.
-  while (!(isGameLost || isGameWon)) {
+  while (!isGameWon) {
     // Add a card from the deck, if possible
     if (!hand.isFull) {
       final drawnCard = deck.drawCard();
@@ -46,14 +44,10 @@ void main(List<String> arguments) {
     }
 
     // Show the player's hand.
-    print('Your hand:');
-    for (var i = 0; i < hand.size; i++) {
-      final idx = i + 1;
-      final card = hand.cards[i];
-      print('  $idx: $card');
-    }
+    renderer.renderMessage('Your hand:');
+    renderer.renderHand(hand);
 
-    print('Choose a card or `pass`: ');
+    renderer.renderMessage('Choose a card or `pass`: ');
 
     final choice = stdin.readLineSync();
     if (choice == null) {
@@ -66,7 +60,7 @@ void main(List<String> arguments) {
     // Parse the card number.
     var cardNumber = int.tryParse(choice);
     if (cardNumber == null) {
-      print('This is not a valid number!');
+      renderer.renderMessage('This is not a valid number!');
       continue;
     }
 
@@ -74,31 +68,29 @@ void main(List<String> arguments) {
     cardNumber -= 1;
 
     if (cardNumber < 0) {
-      print('The chosen card number is too small!');
+      renderer.renderMessage('The chosen card number is too small!');
       continue;
     }
 
     if (cardNumber >= hand.size) {
-      print('The chosen card number is too high!');
+      renderer.renderMessage('The chosen card number is too high!');
       continue;
     }
 
     final card = hand.playCardAt(cardNumber);
-    print('You play $card');
+    renderer.renderMessage('You play $card');
     switch (card.effect) {
       case Effect.none:
-        print('You passed the turn');
+        renderer.renderMessage('You passed the turn');
         break;
       case Effect.winGame:
         isGameWon = true;
         break;
       case Effect.loseGame:
-        isGameLost = true;
+        isGameWon = false;
         break;
     }
   }
 
-  if (isGameLost) print('You lost!');
-
-  if (isGameWon) print('You won!');
+  renderer.renderGameOver(isGameWon);
 }
