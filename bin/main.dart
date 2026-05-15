@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cards_with_dart/card_mgmt.dart';
+import 'package:cards_with_dart/player.dart';
 import 'package:cards_with_dart/src/renderer/stdout_renderer.dart';
 
 void main(List<String> arguments) {
@@ -26,30 +27,25 @@ void main(List<String> arguments) {
   ]);
   deck.shuffle();
 
-  // Then create a hand and give it a card.
-  final hand = Hand(handSize);
-  final card1 = deck.drawCard();
-  if (card1 != null) hand.addCard(card1);
+  final player = Player('Player', deck, handSize);
+  player.setUpHand();
 
   var isGameWon = false;
-
+  var isGameRunning = true;
   renderer.renderMessage('Cards with Dart');
 
   // Run the loop until the player has either won or lost.
-  while (!isGameWon) {
-    // Add a card from the deck, if possible
-    if (!hand.isFull) {
-      final drawnCard = deck.drawCard();
-      if (drawnCard != null) hand.addCard(drawnCard);
+  while (isGameRunning) {
+    // Add a card from the deck, if possible, and then show the player's hand.
+    if (!player.hand.isFull) {
+      player.drawCard();
     }
-
-    // Show the player's hand.
     renderer.renderMessage('Your hand:');
-    renderer.renderHand(hand);
+    renderer.renderHand(player.hand);
 
+    // Get player action.
     renderer.renderMessage('Choose a card or `pass`: ');
-
-    final choice = stdin.readLineSync();
+    final choice = player.getAction();
     if (choice == null) {
       print('input error');
       exit(1);
@@ -72,21 +68,23 @@ void main(List<String> arguments) {
       continue;
     }
 
-    if (cardNumber >= hand.size) {
+    if (cardNumber >= player.hand.size) {
       renderer.renderMessage('The chosen card number is too high!');
       continue;
     }
 
-    final card = hand.playCardAt(cardNumber);
+    final card = player.hand.playCardAt(cardNumber);
     renderer.renderMessage('You play $card');
     switch (card.effect) {
       case Effect.none:
         renderer.renderMessage('You passed the turn');
         break;
       case Effect.winGame:
+        isGameRunning = false;
         isGameWon = true;
         break;
       case Effect.loseGame:
+        isGameRunning = false;
         isGameWon = false;
         break;
     }
