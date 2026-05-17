@@ -9,7 +9,7 @@ class Card {
   Card(this.name, this.effect);
 
   @override
-  String toString() => 'Card (name: $name, effect: $effect)';
+  String toString() => 'card [$name] with effect: [${effect.name}]';
 
   @override
   bool operator ==(Object other) =>
