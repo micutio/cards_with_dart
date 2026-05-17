@@ -9,7 +9,9 @@ class Player {
   final Deck deck;
   final Hand hand;
 
-  Player(this.name, this.deck, int handSize) : hand = Hand(handSize);
+  Player(this.name, int deckSize, int handSize)
+    : deck = Deck('Standard Deck', deckSize),
+      hand = Hand(handSize);
 
   void setUpHand() {
     drawCard();
