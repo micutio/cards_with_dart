@@ -7,5 +7,5 @@ import 'package:cards_with_dart/src/renderer/stdout_renderer.dart';
 void main(List<String> arguments) {
   final game = Game(StdoutRenderer());
   game.setUp();
-  game.gameLoop();
+  game.loop();
 }

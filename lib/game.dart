@@ -48,7 +48,7 @@ class Game {
   }
 
   /// Runs the game loop until the [Game] ends.
-  void gameLoop() {
+  void loop() {
     _renderer.renderMessage('Cards with Dart');
 
     // Run the loop until the player has either won or lost.
