@@ -1,6 +1,6 @@
-import 'dart:io';
-
+import 'package:cards_with_dart/action.dart';
 import 'package:cards_with_dart/card_mgmt.dart';
+import 'package:cards_with_dart/input.dart';
 
 /// Represents a player.
 /// Later this can be initialized from a savegame or network account.
@@ -8,10 +8,14 @@ class Player {
   final String name;
   final Deck deck;
   final Hand hand;
+  final Input _input;
 
-  Player(this.name, int deckSize, int handSize)
+  PlayerAction? _nextAction;
+
+  Player(this.name, int deckSize, int handSize, Input input)
     : deck = Deck('Standard Deck', deckSize),
-      hand = Hand(handSize);
+      hand = Hand(handSize),
+      _input = input;
 
   void setUpHand() {
     drawCard();
@@ -22,9 +26,18 @@ class Player {
     if (card1 != null) hand.addCard(card1);
   }
 
-  /// For now we use the string typed in by the user as their action
-  /// and continue to process it further.
-  String? getAction() {
-    return stdin.readLineSync();
+  /// Returns the next action the player has chosen to take.
+  PlayerAction consumeAction() {
+    final action = _nextAction;
+    _nextAction = null;
+    return action!;
+  }
+
+  void pollAction() {
+    _nextAction = _input.getPlayerAction();
+  }
+
+  bool hasAction() {
+    return _nextAction != null;
   }
 }

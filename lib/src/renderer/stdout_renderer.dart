@@ -9,6 +9,7 @@ class StdoutRenderer implements Renderer {
 
   @override
   void renderHand(Hand hand) {
+    print('Your Hand:');
     for (var i = 0; i < hand.size; i++) {
       final idx = i + 1;
       final card = hand.cards[i];
