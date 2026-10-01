@@ -1,5 +1,4 @@
 import 'package:cards_with_dart/game.dart';
-
 import 'package:cards_with_dart/src/renderer/stdout_renderer.dart';
 
 /// The main method.
