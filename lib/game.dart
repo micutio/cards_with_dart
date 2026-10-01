@@ -66,6 +66,9 @@ class Game {
       // TODO: Ideally this would resolve the new board state by applying effects etc.
       actionResult = _advanceGame(actionResult);
     }
+
+    // Render the terminal game-over state after the loop exits.
+    _render(actionResult);
   }
 
   /// Render the board and player state according to the given [ActionResult]
