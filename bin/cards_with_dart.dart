@@ -4,7 +4,8 @@ import 'package:cards_with_dart/src/renderer/stdout_renderer.dart';
 /// The main method.
 /// All logic is in the [Game] class, keeping this nice and tidy.
 void main(List<String> arguments) {
-  final game = Game(StdoutRenderer());
-  game.setUp();
-  game.loop();
+  // ignore: unused_local_variable
+  final game = Game(StdoutRenderer())
+    ..setUp()
+    ..loop();
 }

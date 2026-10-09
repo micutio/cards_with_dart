@@ -41,7 +41,7 @@ class Game {
     // `...` is the spread operator, which unpacks the little 2-card list
     // into the bigger list.
     _player.deck.addCards([
-      for (var card in library.cards) ...[card, card],
+      for (final card in library.cards) ...[card, card],
     ]);
     _player.deck.shuffle();
     _player.setUpHand();
