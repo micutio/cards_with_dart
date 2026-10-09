@@ -2,14 +2,14 @@ import 'effect.dart';
 
 /// Represents a single card.
 class Card {
-  final String name;
-  final Effect effect;
-
   /// Generative constructor to initialise name and effect.
   Card(this.name, this.effect);
 
+  final String name;
+  final Effect effect;
+
   @override
-  String toString() => 'card [$name] with effect: [${effect.name}]';
+  int get hashCode => name.hashCode ^ effect.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -20,5 +20,5 @@ class Card {
           effect == other.effect;
 
   @override
-  int get hashCode => name.hashCode ^ effect.hashCode;
+  String toString() => 'card [$name] with effect: [${effect.name}]';
 }

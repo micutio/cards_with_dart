@@ -9,6 +9,7 @@ class PassAction extends PlayerAction {}
 class ViewHandAction extends PlayerAction {}
 
 class PlayCardAction extends PlayerAction {
-  final int cardNumber;
   PlayCardAction(this.cardNumber);
+
+  final int cardNumber;
 }

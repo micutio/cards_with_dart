@@ -6,11 +6,11 @@ import 'card.dart';
 /// Cards are drawn from the back of the deck to avoid to much re-allocation
 /// of the backing list.
 class Deck {
+  Deck(this.title, this.maxSize);
+
   final String title;
   final int maxSize;
   final List<Card> _cards = [];
-
-  Deck(this.title, this.maxSize);
 
   /// Draws a card and removes it from the deck.
   Card? drawCard() {

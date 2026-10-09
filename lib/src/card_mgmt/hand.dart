@@ -4,10 +4,10 @@ import 'card.dart';
 
 /// The cards a player is holding in their hand.
 class Hand {
+  Hand(this.maxSize);
+
   final int maxSize;
   final List<Card> _cards = [];
-
-  Hand(this.maxSize);
 
   /// Adds a card to the hand.
   /// TODO: Specify what should happen if the hand is already full!
@@ -33,7 +33,7 @@ class Hand {
   /// Returns the current hand size, i.e.: cards in hand.
   int get size => _cards.length;
 
-  /// Returns [true] if the hand is full, [false] otherwise.
+  /// Returns `true` if the hand is full, `false` otherwise.
   bool get isFull => size == maxSize;
 
   /// Returns all cards of the hand without removing them.

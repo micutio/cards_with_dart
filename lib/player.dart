@@ -5,17 +5,17 @@ import 'package:cards_with_dart/input.dart';
 /// Represents a player.
 /// Later this can be initialized from a savegame or network account.
 class Player {
+  Player(this.name, int deckSize, int handSize, Input input)
+    : deck = Deck('Standard Deck', deckSize),
+      hand = Hand(handSize),
+      _input = input;
+
   final String name;
   final Deck deck;
   final Hand hand;
   final Input _input;
 
   PlayerAction? _nextAction;
-
-  Player(this.name, int deckSize, int handSize, Input input)
-    : deck = Deck('Standard Deck', deckSize),
-      hand = Hand(handSize),
-      _input = input;
 
   void setUpHand() {
     drawCard();

@@ -7,6 +7,11 @@ import 'package:cards_with_dart/renderer.dart';
 import 'package:cards_with_dart/src/input/stdin_input.dart';
 
 class Game {
+  /// Constructor. Takes generic [Renderer] to visualise the game.
+  Game(Renderer renderer)
+    : _renderer = renderer,
+      _player = Player('Player', _deckSize, _handSize, StdinInput());
+
   static const int _deckSize = 10;
   static const int _handSize = 4;
 
@@ -20,11 +25,6 @@ class Game {
   bool _isNewTurn = true;
 
   // TODO: Construct player class outside of this one!
-
-  /// Constructor. Takes generic [Renderer] to visualise the game.
-  Game(Renderer renderer)
-    : _renderer = renderer,
-      _player = Player('Player', _deckSize, _handSize, StdinInput());
 
   /// Initialize necessary fields and get the [Game] ready to play.
   void setUp() {
