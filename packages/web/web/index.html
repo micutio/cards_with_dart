@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cards with Dart</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="main.dart.js"></script>
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Cards with Dart</h1>
+      <div class="stats">
+        <span id="deck-count">Deck: 0</span>
+        <span id="hand-count">Hand: 0/4</span>
+      </div>
+    </header>
+
+    <section id="status-banner" class="status-banner hidden"></section>
+
+    <section class="controls">
+      <button id="pass-btn" type="button">Pass Turn</button>
+      <button id="reset-btn" type="button" class="secondary">New Game</button>
+    </section>
+
+    <section class="board">
+      <h2>Your Hand</h2>
+      <div id="hand-container" class="hand-grid"></div>
+    </section>
+
+    <section class="log-section">
+      <h2>Game Log</h2>
+      <ul id="log-list" class="log-list"></ul>
+    </section>
+  </main>
+</body>
+</html>

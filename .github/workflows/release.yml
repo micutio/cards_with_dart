@@ -1,5 +1,4 @@
-# Builds native CLI archives and publishes them to a GitHub Release.
-# Pub.dev publishing, code signing, and extra CPU architectures are out of scope.
+# Builds native CLI archives, static Web bundle, and Android APK, then publishes them to a GitHub Release.
 
 name: Release
 
@@ -71,9 +70,9 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
-      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: stable
+          channel: stable
 
       - name: Cache pub dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -83,13 +82,19 @@ jobs:
           restore-keys: pub-${{ runner.os }}-
 
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
 
-      - name: Run tests
-        run: dart test
+      - name: Run Core, CLI, & Web tests
+        run: |
+          dart test packages/core
+          dart test packages/cli
+          dart test packages/web
 
-  build:
-    name: Build
+      - name: Run Flutter App tests
+        run: flutter test packages/app
+
+  build-cli:
+    name: Build CLI
     needs: [verify, test]
     timeout-minutes: 15
     strategy:
@@ -111,9 +116,9 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
-      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: stable
+          channel: stable
 
       - name: Cache pub dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -123,13 +128,19 @@ jobs:
           restore-keys: pub-${{ runner.os }}-
 
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
 
       - name: Build CLI bundle
-        run: dart build cli
+        shell: bash
+        run: |
+          cd packages/cli
+          dart build cli
 
       - name: Smoke test CLI bundle
-        run: dart run tool/smoke_cli.dart
+        shell: bash
+        run: |
+          cd packages/cli
+          dart run tool/smoke_cli.dart
 
       - name: Package tar.gz
         if: runner.os != 'Windows'
@@ -138,7 +149,7 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           archive="dist/cards_with_dart-${{ needs.verify.outputs.version }}-${{ matrix.archive_os }}.tar.gz"
-          tar -czf "$archive" -C "build/cli/${{ matrix.target }}/bundle" .
+          tar -czf "$archive" -C "packages/cli/build/cli/${{ matrix.target }}/bundle" .
 
       - name: Package zip
         if: runner.os == 'Windows'
@@ -146,19 +157,123 @@ jobs:
         run: |
           $dest = "dist/cards_with_dart-${{ needs.verify.outputs.version }}-${{ matrix.archive_os }}.zip"
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Compress-Archive -Path "build/cli/${{ matrix.target }}/bundle/*" -DestinationPath $dest
+          Compress-Archive -Path "packages/cli/build/cli/${{ matrix.target }}/bundle/*" -DestinationPath $dest
 
       - name: Upload archive
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-${{ matrix.archive_os }}
           path: dist/*
           retention-days: 1
           if-no-files-found: error
 
+  build-web:
+    name: Build Web
+    needs: [verify, test]
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+
+      - name: Cache pub dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Web bundle
+        shell: bash
+        run: |
+          cd packages/web
+          dart run tool/build_web.dart
+
+      - name: Package Web archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          tar -czf "dist/cards_with_dart-web-${{ needs.verify.outputs.version }}.tar.gz" -C "packages/web/build/web" .
+          (cd packages/web/build/web && zip -rq "../../../../dist/cards_with_dart-web-${{ needs.verify.outputs.version }}.zip" .)
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-web
+          path: dist/*
+          retention-days: 1
+          if-no-files-found: error
+
+  build-android:
+    name: Build Android
+    needs: [verify, test]
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+
+      - name: Cache pub dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Cache Gradle
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('packages/app/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android APK
+        shell: bash
+        run: |
+          cd packages/app
+          flutter build apk --release --no-codesign
+
+      - name: Copy APK to dist
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp packages/app/build/app/outputs/flutter-apk/*.apk "dist/cards_with_dart-app-${{ needs.verify.outputs.version }}.apk"
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-android-apk
+          path: dist/*.apk
+          retention-days: 1
+          if-no-files-found: error
+
   publish:
     name: Publish
-    needs: [verify, build]
+    needs: [verify, build-cli, build-web, build-android]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -169,7 +284,7 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Download archives
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: release-*
           path: dist
@@ -180,7 +295,7 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          sha256sum *.tar.gz *.zip > SHA256SUMS
+          sha256sum *.tar.gz *.zip *.apk > SHA256SUMS
           cat SHA256SUMS
 
       - name: Read release notes
@@ -213,5 +328,6 @@ jobs:
           files: |
             dist/*.tar.gz
             dist/*.zip
+            dist/*.apk
             dist/SHA256SUMS
           fail_on_unmatched_files: true

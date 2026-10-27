@@ -1,3 +1,3 @@
-## 1.0.0
+## 0.1.0
 
-- Initial version.
+- Initial monorepo workspace setup with core card game library, native CLI, Flutter Android app, and pure Dart web frontend.

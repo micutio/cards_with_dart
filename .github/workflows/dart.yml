@@ -3,7 +3,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Dart
+name: Dart & Flutter
 
 on:
   push:
@@ -26,10 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # https://github.com/dart-lang/setup-dart/blob/main/README.md
-      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: stable
+          channel: stable
 
       - name: Cache pub dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -39,7 +38,7 @@ jobs:
           restore-keys: pub-${{ runner.os }}-
 
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
 
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
@@ -51,9 +50,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: stable
+          channel: stable
 
       - name: Cache pub dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -63,7 +62,7 @@ jobs:
           restore-keys: pub-${{ runner.os }}-
 
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
 
       - name: Analyze project source
         run: dart analyze --fatal-infos
@@ -75,9 +74,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: stable
+          channel: stable
 
       - name: Cache pub dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -87,7 +86,7 @@ jobs:
           restore-keys: pub-${{ runner.os }}-
 
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
 
       # dart fix --dry-run exits 0 even when fixes are available.
       - name: Check automated fixes
@@ -107,14 +106,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        sdk: [stable]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: ${{ matrix.sdk }}
+          channel: stable
 
       - name: Cache pub dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -124,44 +122,67 @@ jobs:
           restore-keys: pub-${{ runner.os }}-
 
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
 
-      - name: Run tests
-        if: runner.os != 'Linux'
-        run: dart test
+      - name: Run Core, CLI, & Web tests
+        run: |
+          dart test packages/core
+          dart test packages/cli
+          dart test packages/web
+
+      - name: Run Flutter App tests
+        run: flutter test packages/app
 
       - name: Run tests with coverage
         if: runner.os == 'Linux'
-        run: dart test --coverage=coverage
+        run: |
+          dart test --coverage=packages/core/coverage packages/core
+          dart run coverage:format_coverage --lcov --in=packages/core/coverage --out=packages/core/coverage/lcov.info --report-on=packages/core/lib --base-directory=.
+          dart test --coverage=packages/web/coverage packages/web
+          dart run coverage:format_coverage --lcov --in=packages/web/coverage --out=packages/web/coverage/lcov.info --report-on=packages/web/lib --base-directory=.
+          flutter test --coverage --coverage-path=packages/app/coverage/lcov.info packages/app
 
-      - name: Convert coverage to lcov
+      - name: Upload Core coverage
         if: runner.os == 'Linux'
-        run: dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib --base-directory=.
-
-      - name: Upload coverage
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coverage-lcov
-          path: coverage/lcov.info
+          name: core-coverage-lcov
+          path: packages/core/coverage/lcov.info
           retention-days: 7
           if-no-files-found: error
 
-  build:
-    name: Build
+      - name: Upload Web coverage
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-coverage-lcov
+          path: packages/web/coverage/lcov.info
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload App coverage
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: app-coverage-lcov
+          path: packages/app/coverage/lcov.info
+          retention-days: 7
+          if-no-files-found: error
+
+  build-cli:
+    name: Build CLI
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        sdk: [stable]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: ${{ matrix.sdk }}
+          channel: stable
 
       - name: Cache pub dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -171,18 +192,108 @@ jobs:
           restore-keys: pub-${{ runner.os }}-
 
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
 
       - name: Build CLI bundle
-        run: dart build cli
+        shell: bash
+        run: |
+          cd packages/cli
+          dart build cli
 
       - name: Smoke test CLI bundle
-        run: dart run tool/smoke_cli.dart
+        shell: bash
+        run: |
+          cd packages/cli
+          dart run tool/smoke_cli.dart
 
       - name: Upload CLI bundle
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cli-${{ matrix.os }}
-          path: build/cli/
+          path: packages/cli/build/cli/
+          retention-days: 7
+          if-no-files-found: error
+
+  build-web:
+    name: Build Web
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+
+      - name: Cache pub dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Web bundle
+        shell: bash
+        run: |
+          cd packages/web
+          dart run tool/build_web.dart
+
+      - name: Upload Web bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-bundle
+          path: packages/web/build/web/
+          retention-days: 7
+          if-no-files-found: error
+
+  build-android:
+    name: Build Android
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+
+      - name: Cache pub dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Cache Gradle
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('packages/app/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android APK
+        shell: bash
+        run: |
+          cd packages/app
+          flutter build apk --debug
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: app-debug-apk
+          path: packages/app/build/app/outputs/flutter-apk/*.apk
           retention-days: 7
           if-no-files-found: error
